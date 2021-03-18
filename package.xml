@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>deepsort_ros</name>
+  <version>0.0.0</version>
+  <description>ROS2 wrapper around nwojke/deep_sort</description>
+  <url>https://github.com/nwojke/deep_sort</url>
+  <url>https://github.com/anand-bala/deepsort_ros</url>
+
+  <author>Nicolai Wojke</author>
+  <author>Alex Bewley</author>
+  <author>Dietrich Paulus</author>
+
+  <maintainer email="anandbala1597@gmail.com">Anand Balakrishnan</maintainer>
+    <!-- Not my fault it is GPLv3. Check the orignal repo. NOTE: Most forked versions and reimplementations don't seem to keep the license. But this is not technically legal I guess. -->
+  <license>GPLv3</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>perception_interfaces</depend>
+  <depend>darknet_ros</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
