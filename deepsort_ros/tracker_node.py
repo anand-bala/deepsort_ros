@@ -1,16 +1,16 @@
+from collections import deque
+from typing import Deque, Tuple
+
 import numpy as np
 import rclpy
 from perception_interfaces.msg import BoundingBox, BoundingBoxes
 from rclpy.node import Node
 
-from typing import Deque
-
 from deep_sort.detection import Detection
 from deep_sort.nn_matching import NearestNeighborDistanceMetric
 from deep_sort.preprocessing import non_max_suppression
+from deep_sort.track import Track
 from deep_sort.tracker import Tracker
-
-from collections import deque
 
 
 class TrackerNode(Node):
@@ -41,11 +41,19 @@ class TrackerNode(Node):
         nn_budget = self.get_parameter("nn_budget")
         metric = NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
         self._tracker = Tracker(metric)
+        self.get_logger().info(" * Tracker ready for Bounding Boxes")
 
     def bbox_callback(self, msg: BoundingBoxes) -> None:
+        def bbox_to_tlwh(bbox: BoundingBox) -> Tuple[float, float, float, float]:
+            left = bbox.xmin
+            top = bbox.ymin
+            width = abs(bbox.xmax - bbox.xmin)
+            height = abs(bbox.ymax - bbox.ymin)
+            return left, top, width, height
+
         detections = [
             Detection(
-                tlwh=(box.x, box.y, box.width, box.height),
+                tlwh=bbox_to_tlwh(box),
                 confidence=box.probability,
                 class_id=box.class_id,
                 class_name=box.class_label,
@@ -68,18 +76,20 @@ class TrackerNode(Node):
 
         # Store results.
         results = deque()  # type: Deque[BoundingBox]
+        track: Track
         for track in self._tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
-            bbox = track.to_tlwh()  # type: np.ndarray
+            # bbox = track.to_tlwh()  # type: np.ndarray
+            bbox = track.to_tlbr()  # type: np.ndarray
             result = BoundingBox()
-            result.x = bbox[0]
-            result.y = bbox[1]
-            result.width = bbox[2]
-            result.height = bbox[3]
-            result.id = track.get_class_id()
-            result.probability = track.get_confidence()
+            result.xmin = bbox[0]
+            result.ymin = bbox[1]
+            result.xmax = bbox[2]
+            result.ymax = bbox[3]
+            result.class_id = track.get_class_id()
             result.class_label = track.get_class()
+            result.probability = track.get_confidence()
             result.tracking_id = track.track_id
             results.append(result)
 
@@ -95,7 +105,6 @@ class TrackerNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = TrackerNode()
-    rclpy.logging.get_logger("rclpy").info(" * Tracker ready for Bounding Boxes")
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
